@@ -18,7 +18,7 @@ def fakeDetections(imwd, imht, time, obstacle, p_D=0.92, m_FA=3):
     p_D = p_D
     precision_D = 2.0
     margin = 3
-    
+
     N_objects = 4
     obj_m = {1:((-margin, imht*0.5),(imwd+margin, imht*0.5)), 2:((-margin, imht*0.2),(imwd+margin, imht*0.8)),
                 3:((-margin, imht*0.8),(imwd+margin, imht*0.2))}
@@ -43,7 +43,7 @@ def fakeDetections(imwd, imht, time, obstacle, p_D=0.92, m_FA=3):
                 fa_im = np.random.random_sample((int(sz[1]),int(sz[0])))*255
                 fa_im = fa_im.astype(np.uint8)
                 fp_patch.append(fa_im)
-    
+
     for o in obj_m:
         s = obj_m[o][0]
         f = obj_m[o][1]
@@ -75,7 +75,7 @@ def fakeDetections(imwd, imht, time, obstacle, p_D=0.92, m_FA=3):
         tp_im = np.clip(tp_im, a_min=0, a_max=1)*255
         tp_im = tp_im.astype(np.uint8)
         tp_patch.append(tp_im)
-    
+
     if True:
         laps = 3
         myid = len(obj_m)+1
@@ -140,7 +140,7 @@ if __name__ == '__main__':
         print('\nframe: {}'.format(nframe))
         canvas = np.zeros((im_height, im_width,3), np.uint8)
         cv2.rectangle(canvas, (obstacle[0],obstacle[1]), (obstacle[0]+obstacle[2],obstacle[1]+obstacle[3]), obstacle_color, -1)
-        
+
         tp_set, fp_set, tp_patch, fp_patch = fakeDetections(im_width, im_height, nframe/end_of_the_world, obstacle, p_D=0.8, m_FA=3)
         detections = {}
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
                     continue
                 xy2 = p.kalman_state.copy()
                 if p.status[4] == 0:
-                    cv2.line(canvas, (int(round(xy1[0,0])), int(round(xy1[1,0])) ), 
+                    cv2.line(canvas, (int(round(xy1[0,0])), int(round(xy1[1,0])) ),
                         (int(round(xy2[0,0])), int(round(xy2[1,0])) ),(255,0,255), 2)
                     assert p.detection[7] == 0, 'Check 3'
                 else:
@@ -202,7 +202,7 @@ if __name__ == '__main__':
         key = cv2.waitKey(1)
         nframe+=1
     mht.concludeTracks()
-    
+
     print('\nResutls:')
     for t in mht.confirmed_tracks:
         canvas2 = np.zeros((im_height, im_width,3), np.uint8)
@@ -215,7 +215,7 @@ if __name__ == '__main__':
             t2 = track[l]
             x1, y1 = int(round(t1[1]+t1[3]/2)), int(round(t1[2]+t1[4]/2))
             x2, y2 = int(round(t2[1]+t2[3]/2)), int(round(t2[2]+t2[4]/2))
-            
+
             dummy = t2[5]
             if dummy == 0:
                 cv2.line(canvas2, (x1, y1), (x2, y2), colors, 2)
@@ -232,4 +232,3 @@ if __name__ == '__main__':
         print('\tObjectID:{}, start:{}, end:{}, length:{}'.format(t, time_start, time_end, len(track)))
     cv2.waitKey()
     print('finished.')
-    
