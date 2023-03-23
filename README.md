@@ -1,6 +1,6 @@
 ## Multiple Hypothesis Tracking
 
-**This repository is forked from yoon28/pymht[https://github.com/mollyzyy787/pymht]**
+**This repository is forked from [yoon28/pymht](https://github.com/mollyzyy787/pymht)**
 
 This is an implementation of the Multiple Hypothesis Tracking (MHT) algorithm [1, 2, 3].
 Check the `main.py`, the demonstration of MHT using counterfeit detections will be shown.
