@@ -46,7 +46,7 @@ class TrackTree():
         self.nodes[self.v_num].track_id = node_info['track_id']
         self.nodes[self.v_num].v_num = self.v_num
         return self.getVertexNum_and_Increment()
-    
+
     def getParent(self, node_idx):
         p = self.nodes[node_idx].parent
         if p is None:
@@ -57,17 +57,17 @@ class TrackTree():
     def getChildren(self, node_idx):
         children = [c.v_num for c in self.nodes[node_idx].children]
         return children
-    
+
     def getNode(self, node_idx):
         return self.nodes[node_idx]
 
     def findLeaves(self):
         leaves = [l.v_num for l in self.nodes[self.root_num].leaves]
         return leaves
-    
+
     def getRoot(self):
         return self.root_num
-    
+
     def removeBranch(self, node_idx):
         assert self.nodes[node_idx].is_leaf
         root = self.nodes[node_idx].root
@@ -77,11 +77,11 @@ class TrackTree():
                 break
             self.nodes[p.v_num].parent = None
             del self.nodes[p.v_num]
-    
+
     def detachSubTree(self, new_root):
         if self.nodes[new_root].is_root:
             return
-        
+
         path = self.nodes[new_root].path
         for p in path:
             if p.v_num == new_root:
@@ -105,14 +105,19 @@ class TrackTree():
 
     def incrementVertexNum(self):
         self.v_num += 1
-    
+
     def getVertexNum_and_Increment(self):
         self.v_num += 1
         return self.v_num - 1
 
+    def printTree(self):
+        print("tree_id: ", self.treeNum)
+        root = self.getNode(self.root_num)
+        print(RenderTree(root).by_attr("track_id"))
+
 class MHTTracker():
     def __init__(self, parameters):
-        self.id_pool = 1 # give new ID 1) after updated with a det, 2) init new track with a det, 
+        self.id_pool = 1 # give new ID 1) after updated with a det, 2) init new track with a det,
         self.tree_num = 1
         self.hypothesis_set = dict()
         self.confirmed_tracks = dict()
@@ -145,9 +150,9 @@ class MHTTracker():
         self.kalman_H = np.array([[1,0,0,0],[0,1,0,0]])
         #self.noise_R = np.diag([self.kalman_R**2, self.kalman_R**2])
         if self.kalman_const_noise:
-            self.noise_Q = np.diag([self.kalman_cov_xy**2, self.kalman_cov_xy**2, 
+            self.noise_Q = np.diag([self.kalman_cov_xy**2, self.kalman_cov_xy**2,
                 self.kalman_cov_vel**2, self.kalman_cov_vel**2])
-    
+
     def getKalmanNoiseR(self, size=None):
         if self.kalman_const_noise:
             return np.diag([self.kalman_R**2, self.kalman_R**2])
@@ -157,7 +162,7 @@ class MHTTracker():
 
     def getKalmanNoiseQ(self, size=None, init_P=False):
         if init_P and self.kalman_const_noise:
-            return np.diag([self.kalman_cov_xy**2, self.kalman_cov_xy**2, 
+            return np.diag([self.kalman_cov_xy**2, self.kalman_cov_xy**2,
                 self.kalman_cov_xy**2, self.kalman_cov_xy**2])
         if init_P and size > 0 and self.kalman_const_noise==False:
             return np.diag([ (self.kalman_cov_xy*size)**2, (self.kalman_cov_xy*size)**2,
@@ -171,18 +176,18 @@ class MHTTracker():
 
     def incrementID(self):
         self.id_pool += 1
-    
+
     def getID_and_Increment(self):
         self.id_pool += 1
         return self.id_pool - 1
-    
+
     def incrementTreeNum(self):
         self.tree_num += 1
-    
+
     def getTreeNum_and_Increment(self):
         self.tree_num += 1
         return self.tree_num - 1
-    
+
     def multivariateNormalProb(self, x, mean, cov, ln_output=False, inv_cov=None):
         d_2 = x.shape[0] * 0.5
         if self.use_denom:
@@ -227,7 +232,7 @@ class MHTTracker():
         info['detection'][5] = nframe # frame
         #info['detection'][6] = -1 # dummy_indicator
         info['detection'][7] = 1 # dummy_indicator
-        
+
         # state, cov, scores
         size = info['detection'][2]
         info['kalman_state'] = self.kalman_F @ info['kalman_state']
@@ -238,10 +243,10 @@ class MHTTracker():
         K = P_pred @ self.kalman_H.T @ IS
         IKH = np.eye(K.shape[0]) - K @ self.kalman_H
         info['kalman_cov'] = IKH @ P_pred @ IKH.T + K @ R @ K.T
-        
+
         # info['kalman_cov'] = Q*2.0 # P_pred.copy()
         # info['kalman_state'], info['kalman_cov'] = self.kalman_predict(info['kalman_state'], info['kalman_cov'], info['detection'][2])
-        
+
         info['scores'] = [current_node.scores[0] + np.log(1-self.P_D), 0, np.log(1-self.P_D), current_node.scores[3]]
         # if info['scores'][0] < 0:
         #     info['scores'][0] = 0
@@ -258,7 +263,7 @@ class MHTTracker():
         new_info['status'][4] = 0 # indicator dummy
         det_bbox = list(adet)
 
-        if max([ det_bbox[3] / current_node.detection[3], 
+        if max([ det_bbox[3] / current_node.detection[3],
             current_node.detection[3] / det_bbox[3] ]) > self.max_scale_change: # scale gating
             del new_info
             return -1, -1
@@ -270,7 +275,7 @@ class MHTTracker():
         new_info['detection'] = det_bbox
         new_info['det_index'].append((adet[5], adet[6])) # detection index
         new_info['is_dummy'] = False
-        
+
         X_new = X_predict + Kalman_gain @ Kalman_innovation
         IKH = np.eye(Kalman_gain.shape[0]) - Kalman_gain @ self.kalman_H
         P_new = IKH @ P_predict @ IKH.T + Kalman_gain @ Noise_R @ Kalman_gain.T
@@ -278,7 +283,7 @@ class MHTTracker():
         new_info['kalman_state'] = X_new
         new_info['kalman_cov'] = P_new
         #lnlh_kinematic = self.multivariateNormalProb(Kalman_innovation, np.zeros(Kalman_innovation.shape), Kalman_S, True, Kalman_IS) - np.log(self.P_FA)
-        motion_term = self.multivariateNormalProb(Kalman_innovation, np.zeros(Kalman_innovation.shape), cov=Kalman_S, 
+        motion_term = self.multivariateNormalProb(Kalman_innovation, np.zeros(Kalman_innovation.shape), cov=Kalman_S,
             ln_output=True, inv_cov=Kalman_IS) - np.log(self.kin_null)
         #print(self.multivariateNormalProb(np.zeros((2,1)), np.zeros(Kalman_innovation.shape), Kalman_S, True, Kalman_IS))
         if app_score == None:
@@ -312,7 +317,7 @@ class MHTTracker():
         for ti in self.hypothesis_set:
             atree = self.hypothesis_set[ti]
             leaves = atree.findLeaves()
-            
+
             for l in leaves:
                 leaf = atree.nodes[l]
 
@@ -322,7 +327,7 @@ class MHTTracker():
                 # add a dummy node
                 if self.addDummyNode(leaf, atree, nframe) == -1:
                     continue
-                
+
                 # compute the prediction step of kalman filter
                 size = leaf.detection[2] # width
                 X_prior = leaf.kalman_state
@@ -357,7 +362,7 @@ class MHTTracker():
                     distance = Y.T @ IS @ Y
                     distance = distance.item()
                     if DEBUGGING: assert distance >= 0, 'Fatal error: covariance is not PSD 2'
-                    
+
                     if distance < self.d_th: # gating
                         adet = dets[d]['det']  # (x, y, w, h, b, t, i, dummy) , b=confidence, t=frame, i=i-th detection at the frame
                         if app_scores != None:
@@ -366,7 +371,7 @@ class MHTTracker():
                             v_num, new_id = self.updateNodeWithDetection(adet, leaf, atree, X_predict, P_predict, Y, K, S, IS, R)
                         if v_num != -1 and new_id != -1:
                             det_usage[d].append((ti, v_num, new_id))
-        
+
         # init new tracks
         for d in dets:
             adet = list(dets[d]['det'])  # (x, y, w, h, b, t, i, dummy) , b=confidence, t=frame, i=i-th detection at the frame
@@ -394,17 +399,17 @@ class MHTTracker():
             #    print(RenderTree(self.hypothesis_set[max_leaves[1]].nodes[self.hypothesis_set[max_leaves[1]].findRoot().v_num]).by_attr())
             print('\nNUM ({}): {}/{}/{}'.format(valid_tracks,len(self.hypothesis_set), max_leaves[0], totLeaves))
         return det_usage
-    
+
     def makeConflictList(self, det_usage):
         n_tree = len(self.hypothesis_set)
         if n_tree == 0:
             self.conflictList.clear()
             return
-        
+
         conflictPrev = copy.deepcopy(self.conflictList)
         self.conflictList.clear()
         self.conflictList = {t:None for t in self.hypothesis_set}
-        
+
         for t in self.hypothesis_set:
             atree = self.hypothesis_set[t]
             leaves = atree.findLeaves()
@@ -445,7 +450,7 @@ class MHTTracker():
                                 cflcts.append((acflct[0], c, self.hypothesis_set[acflct[0]].nodes[c].track_id))
                         else:
                             cflcts.append((acflct[0], acflct[1], self.hypothesis_set[acflct[0]].nodes[acflct[1]].track_id))
-        
+
                 # check the confliction of current detections
                 if leaf.status[4] == 0: # not a dummy node
                     det_i = leaf.detection[6]
@@ -465,7 +470,7 @@ class MHTTracker():
                 for k in self.conflictList[t][l]:
                     cflTrees.add(k[0])
             conflictTreeList[t] = list(cflTrees)
-        
+
         conflictTrees = {t:[] for t in self.hypothesis_set}
         it = [k for k in sorted(self.hypothesis_set)]
         for i in range(len(it)):
@@ -480,7 +485,7 @@ class MHTTracker():
                         conflictTrees[t].append(t2)
                         break
             assert len(conflictTrees[t]) == len(set(conflictTrees[t])), 'error check'
-        
+
         category = 0
         tree_category = {t:0 for t in self.hypothesis_set}
         while len(it) > 0:
@@ -491,7 +496,7 @@ class MHTTracker():
                 if i == j: continue
                 conflictTrees[i] = conflictTrees[i] + conflictTrees[j]
                 conflictTrees[j] = []
-            
+
             conflictTrees[i] = list(set(conflictTrees[i]))
             it = sorted(list(set(it) - set(cflTrees)))
 
@@ -499,7 +504,7 @@ class MHTTracker():
             for k in conflictTrees[i]:
                 if tree_category[k] != 0:
                     cat_cfl.append(tree_category[k])
-            
+
             if len(cat_cfl) == 0:
                 for k in conflictTrees[i]:
                     tree_category[k] = category
@@ -509,7 +514,7 @@ class MHTTracker():
                         tree_category[k] = category
                 for k in conflictTrees[i]:
                     tree_category[k] = category
-        
+
         clusters = {k:[] for k in set(tree_category.values())}
         for c in clusters:
             trees = [k for k in tree_category if tree_category[k]==c]
@@ -517,7 +522,7 @@ class MHTTracker():
                 leaves = self.hypothesis_set[t].findLeaves()
                 for l in leaves:
                     clusters[c].append((t, l, self.hypothesis_set[t].nodes[l].track_id)) # tree_no, vertex_no, track_id
-        
+
         if DEBUGGING: # sanity check
             cl = list(clusters.keys())
             for i in range(len(cl)):
@@ -529,12 +534,12 @@ class MHTTracker():
                     list_cj = clusters[cj]
                     intersect = set(list_ci) & set(list_cj)
                     assert len(intersect) == 0, 'error chk 2'
-                    
+
         return clusters
-    
+
     def compBestHypoSet(self, clusters):
         best_set = {k:None for k in clusters}
-        
+
         for c in clusters:
             tracks = clusters[c]
             n_tracks = len(tracks)
@@ -553,7 +558,7 @@ class MHTTracker():
                         edges[l, l2] = 1
                 #        cnt += 1
                 # assert cnt == len(cfls), 'Fatal error: check clusters'
-                
+
                 if score[0] < min_score:
                     min_score = score[0]
 
@@ -567,7 +572,7 @@ class MHTTracker():
                 # if status[1]/track_len > self.min_track_quality and track_len > self.min_track_length:
                 #     score[0] += 0.1
                 weights[l] = score[0]
-            
+
             #weights = weights - (min_score - 0.1)
             best_scores = []
             if self.use_gurobi:
@@ -657,7 +662,7 @@ class MHTTracker():
                     new_root = self.hypothesis_set[t].getRoot()
                 else:
                     prunedLeaves = self.hypothesis_set[t].detachSubTree(new_root)
-                    for p in prunedLeaves: 
+                    for p in prunedLeaves:
                         del self.conflictList[t][p]
                 if self.hypothesis_set[t].valid_track[0] == 1:
                     self.hypothesis_set[t].valid_track = [1, sel_node, sel_id, self.hypothesis_set[t].nodes[sel_node].scores[0]]
@@ -686,13 +691,13 @@ class MHTTracker():
                 if status[1]/track_len > self.min_track_quality and track_len > self.min_track_length:
                     self.hypothesis_set[t].valid_track = [1, sel_node, sel_id, self.hypothesis_set[t].nodes[sel_node].scores[0]]
             else:
-                del self.hypothesis_set[t] 
+                del self.hypothesis_set[t]
                 del self.conflictList[t]
                 continue
-            
+
             # record survived track
             leaves = self.hypothesis_set[t].findLeaves()
-            tempset = [] # a note for survied leaves 
+            tempset = [] # a note for survied leaves
             # n_bad = 0 # bad tracks among finished tracks
             # n_good = 0 # good tracks among finished tracks
             # n_tracking = 0 # under tracking
@@ -736,8 +741,8 @@ class MHTTracker():
         return currentTracks
 
     def branchMerging(self, currentTracks):
-        
-        if DEBUGGING: 
+
+        if DEBUGGING:
             curr_trees = { currentTracks[t][0] for t in currentTracks }
             assert set(self.hypothesis_set.keys()) == curr_trees
 
@@ -778,7 +783,7 @@ class MHTTracker():
                         self.hypothesis_set[best[0]].removeBranch(l[0])
                         del self.conflictList[best[0]][l[0]]
                         sortleaf.remove((l[0], l[1]))
-            
+
             bestscore = self.hypothesis_set[best[0]].nodes[best[1]].scores[0]
             leaves = self.hypothesis_set[best[0]].findLeaves()
             scores = [self.hypothesis_set[best[0]].nodes[l].scores[0] for l in leaves]
@@ -866,7 +871,7 @@ class MHTTracker():
         que.put({param:leaves})
 
     def doTracking(self, nframe, detections, app_scores=None, canvas=None): # update MHT
-        
+
         # detections: (x, y, w, h, b, t, i, dummy), b=confidence, t=frame, i=i-th detection at the frame
         if DEBUGGING:start = time.time()
         det_usage = self.updateTrackTrees(nframe, detections, app_scores=app_scores, canvas=canvas)
@@ -896,7 +901,7 @@ class MHTTracker():
         if DEBUGGING: assert nframe not in self.dets_set
         self.dets_set[nframe] = detections
         return currentTracks
-    
+
     def getTrackPatches(self):
         features = {}
         feat_list = []
@@ -911,7 +916,7 @@ class MHTTracker():
                 else:
                     features[det_i]['used'].append((t,l))
         return features, feat_list
-    
+
     def concludeTracks(self): # conclude MHT
         if DEBUGGING:
             allcfls = set()
@@ -936,7 +941,7 @@ class MHTTracker():
         for c in best_set:
             for b in best_set[c]:
                 self.saveConfirmedTrack(b[0], b[1], b[2])
-        
+
         new_id = 0
         results = []
         for t in self.confirmed_tracks:
